@@ -15,7 +15,7 @@ class QNetwork(nn.Module):
 
     def __init__(self, num_hidden=128):
         nn.Module.__init__(self)
-        self.l1 = nn.Linear(4, num_hidden)
+        self.l1 = nn.Linear(2, num_hidden)
         self.l2 = nn.Linear(num_hidden, 2)
 
     def forward(self, x):
@@ -43,9 +43,7 @@ class ReplayMemory:
         return len(self.memory)
 
 
-
-
-env = gym.envs.make("CartPole-v0")
+env = gym.envs.make("MountainCar-v0")
 
 
 def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_factor, learn_rate):
@@ -60,6 +58,11 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
         # Take actions until end of episode
         done = False
+
+        max_position = -.4
+        add_reward = 0
+        successful = []
+
         while not done:
             # calculate epsilon for policy
             epsilon = get_epsilon(global_steps)
@@ -73,6 +76,15 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
                 time.sleep(0.05)
 
             next_state, reward, done, _ = env.step(action)
+
+            # Give a reward for reaching a new maximum position
+            if state[0] > max_position:
+                max_position = state[0]
+                print(max_position)
+                add_reward += 10
+            else:
+                add_reward += reward
+
 
             memory.push((state, action, reward, next_state, done))
 
@@ -91,9 +103,9 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     return episode_durations
 
 # Let's run it!
-num_episodes = 100
+num_episodes = 500
 batch_size = 64
-discount_factor = 0.8
+discount_factor = 0.9
 learn_rate = 1e-3
 memory = ReplayMemory(10000)
 num_hidden = 128
@@ -108,4 +120,3 @@ np.random.seed(0)
 model = QNetwork(num_hidden)
 
 episode_durations = run_episodes(train, model, memory, env, num_episodes, batch_size, discount_factor, learn_rate)
-
