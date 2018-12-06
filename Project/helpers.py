@@ -20,6 +20,17 @@ def select_action(model, state, epsilon):
 
     return a
 
+def update_target(model, target_model, soft, tau):
+    
+    if soft:
+        for frozen_parameters, parameters in zip(target_model.parameters(), model.parameters()):
+            frozen_parameters.data.copy_(tau*parameters.data + frozen_parameters.data*(1.0 - tau))
+    else:
+        target_model = copy.deepcopy(model)
+        
+    return target_model
+    
+
 def get_epsilon(it, final_epsilon, flatline):
     # after 1000 iterations, e-greedy with epsilon being 0.5
     if it >= flatline:
