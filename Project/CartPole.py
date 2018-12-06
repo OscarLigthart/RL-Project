@@ -84,7 +84,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             if len(memory) > batch_size:
                 
                 if target:
-                    if count % update_target == 0:
+                    if count % target_update == 0:
                         frozen_model = update_target(model, frozen_model, soft, tau)
                         #frozen_model = copy.deepcopy(model)
                     loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
@@ -104,7 +104,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     return episode_durations
 
 # Let's run it!
-num_episodes = 750
+num_episodes = 100
 batch_size = 64
 discount_factor = 0.8
 learn_rate = 1e-3
@@ -112,9 +112,9 @@ memory = ReplayMemory(10000)
 num_hidden = 128
 seed = 42  # This is not randomly chosen
 
-update_target = 100
-target = True
-soft = False
+target_update = 100
+target = False
+soft = True
 tau = 0.9
 
 final_epsilon = 0.05
