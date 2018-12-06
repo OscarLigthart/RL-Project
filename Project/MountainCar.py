@@ -53,10 +53,10 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
     global_steps = 0  # Count the steps (do not reset at episode start, to compute epsilon)
     episode_durations = []  # keep track of episode duration
-    
+
     count = 0
     frozen_model = copy.deepcopy(model)
-    
+
     for i in trange(num_episodes):
 
         t = 0
@@ -69,6 +69,8 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
         add_reward = 0
         successful = []
 
+        current_episode = []
+
         while not done:
             # calculate epsilon for policy
             epsilon = get_epsilon(global_steps, final_epsilon, flatline)
@@ -77,61 +79,72 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             action = select_action(model, state, epsilon)
 
             # show demo of the final episode
-            if i == num_episodes - 1:
-                env.render()
-                time.sleep(0.05)
 
             next_state, reward, done, _ = env.step(action)
 
             # # Give a reward for reaching a new maximum position
-            # if state[0] > max_position:
-            #     max_position = state[0]
+            if state[0] > max_position:
+                max_position = state[0]
             #     add_reward += 10
             # else:
             #     add_reward += reward
 
 
             memory.push((state, action, reward, next_state, done))
+            current_episode.append(action)#(state, action, reward, next_state, done))
 
             # only sample if there is enough memory
             #if len(memory) > batch_size:
             #    loss = train(model, memory, optimizer, batch_size, discount_factor)
-            
+
             if len(memory) > batch_size:
-                
-                if target:
-                    if count % update_target == 0:
-                        frozen_model = copy.deepcopy(model)
-                    loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
-                else:
-                    loss = train(model, memory, optimizer, batch_size, discount_factor)
+                #
+                # if target:
+                    # if count % update_target == 0:
+                    #     frozen_model = copy.deepcopy(model)
+                #     loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
+                # else:
+                #     loss = train(model, memory, optimizer, batch_size, discount_factor)
+
+                loss = train(model, memory, optimizer, batch_size, discount_factor)
 
             state = next_state
             global_steps += 1
             t += 1
             count += 1
 
+
+        if reward == 1.0:
+            env.reset()
+            for act in current_episode:
+                env.step(action)
+                env.render()
+                time.sleep(0.05)
+
         episode_durations.append(t)
 
-    print(episode_durations)    
+    print(episode_durations)
     print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
+
+    print("Max reach")
+    print(max_position)
     env.close()
     return episode_durations
 
 # Let's run it!
-num_episodes = 10000
+num_episodes = 500
 batch_size = 64
 discount_factor = 0.97
 learn_rate = 5e-4
 memory = ReplayMemory(10000)
-num_hidden = 20 #128
+num_hidden = 200 #128
 seed = 42  # This is not randomly chosen
-target = 1
+target = True
 update_target = 100
 
 # Epsilon function linearly decreases until certain number of iterations, after which it is constant
 final_epsilon = 0.05
-flatline = 5000 # Turning point linear -> constant
+flatline = 1000 # Turning point linear -> constant
 
 # We will seed the algorithm (before initializing QNetwork!) for reproducability
 random.seed(seed)
