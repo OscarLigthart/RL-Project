@@ -18,7 +18,7 @@ class QNetwork(nn.Module):
     def __init__(self, num_hidden=128):
         nn.Module.__init__(self)
         self.l1 = nn.Linear(2, num_hidden)
-        self.l2 = nn.Linear(num_hidden, 2)
+        self.l2 = nn.Linear(num_hidden, 3)
 
     def forward(self, x):
         x = F.relu(self.l1(x))
@@ -39,7 +39,8 @@ class ReplayMemory:
         self.memory.append(transition)
 
     def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+        #return random.sample(self.memory, batch_size)
+        return self.memory[-batch_size:]
 
     def __len__(self):
         return len(self.memory)
@@ -57,6 +58,11 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     count = 0
     frozen_model = copy.deepcopy(model)
 
+    best_episode = []
+    distances = []
+
+    max_position = -.4
+
     for i in trange(num_episodes):
 
         t = 0
@@ -65,11 +71,11 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
         # Take actions until end of episode
         done = False
 
-        max_position = -.4
-        add_reward = 0
-        successful = []
-
         current_episode = []
+        before = max_position
+
+        # reset max position
+        max_position = -.4
 
         while not done:
             # calculate epsilon for policy
@@ -91,12 +97,10 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
 
             memory.push((state, action, reward, next_state, done))
-            current_episode.append(action)#(state, action, reward, next_state, done))
+
+            current_episode.append(action) #(state, action, reward, next_state, done))
 
             # only sample if there is enough memory
-            #if len(memory) > batch_size:
-            #    loss = train(model, memory, optimizer, batch_size, discount_factor)
-
             if len(memory) > batch_size:
                 #
                 # if target:
@@ -113,23 +117,26 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             t += 1
             count += 1
 
+        if max_position > before:
+            best_episode = current_episode
 
-        if reward == 1.0:
-            env.reset()
-            for act in current_episode:
-                env.step(action)
-                env.render()
-                time.sleep(0.05)
-
+        #print(max_position)
         episode_durations.append(t)
+        distances.append(max_position)
 
     print(episode_durations)
     print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
 
+    env.reset()
+    for act in best_episode:
+        env.step(act)
+        env.render()
+        time.sleep(0.05)
+
     print("Max reach")
     print(max_position)
     env.close()
-    return episode_durations
+    return distances
 
 # Let's run it!
 num_episodes = 500
@@ -154,4 +161,8 @@ np.random.seed(0)
 
 model = QNetwork(num_hidden)
 
-episode_durations = run_episodes(train, model, memory, env, num_episodes, batch_size, discount_factor, learn_rate)
+distances = run_episodes(train, model, memory, env, num_episodes, batch_size, discount_factor, learn_rate)
+
+plt.figure()
+plt.plot(distances)
+plt.show()

@@ -14,7 +14,8 @@ def select_action(model, state, epsilon):
 
     # use policy to choose action
     if random.random() < epsilon:
-        a = np.random.choice(range(len(actions))).item()
+        #a = np.random.choice(range(len(actions))).item()
+        a = random.choice(range(len(actions)))
     else:
         a = indices.item()
 
