@@ -59,33 +59,28 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
         while not done:
             # calculate epsilon for policy
-            epsilon = get_epsilon(global_steps, final_epsilon, flatline)
+            epsilon = get_epsilon(global_steps, args.final_epsilon, args.epsilon_threshold)
 
             # pick action according to q-values and policy
             action = select_action(model, state, epsilon)
 
-            # show demo of the final episode
-
             next_state, reward, done, _ = env.step(action)
 
-            # # Give a reward for reaching a new maximum position
+            # Keep track of highest reached position
             if state[0] > max_position:
                 max_position = state[0]
-            #     add_reward += 10
-            # else:
-            #     add_reward += reward
 
             current_episode.append(action) #(state, action, reward, next_state, done))
 
             # only sample if there is enough memory
             if len(memory) > batch_size:
-                #
-                # if target:
-                    # if count % update_target == 0:
-                    #     frozen_model = copy.deepcopy(model)
-                #     loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
-                # else:
-                #     loss = train(model, memory, optimizer, batch_size, discount_factor)
+
+                if args.target:
+                    if count % args.update_target == 0:
+                        frozen_model = update_target(model, frozen_model, args.target, args.tau)
+                    loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
+                else:
+                    loss = train(model, memory, optimizer, batch_size, discount_factor)
 
                 loss = train(model, memory, optimizer, batch_size, discount_factor)
                 memory.push((state, action, reward, next_state, done, loss))
@@ -119,31 +114,50 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     env.close()
     return distances
 
-# Let's run it!
-num_episodes = 500
-batch_size = 64
-discount_factor = 0.97
-learn_rate = 5e-4
-memory = ReplayMemory(10000, 'prioritized')
-num_hidden = 200 #128
-seed = 42  # This is not randomly chosen
-target = True
-update_target = 100
+def main():
 
-# Epsilon function linearly decreases until certain number of iterations, after which it is constant
-final_epsilon = 0.05
-flatline = 1000 # Turning point linear -> constant
+    memory = ReplayMemory(args.memory_size, args.sampling)
 
-# We will seed the algorithm (before initializing QNetwork!) for reproducability
-random.seed(seed)
-torch.manual_seed(seed)
-env.seed(seed)
-np.random.seed(0)
+    # We will seed the algorithm (before initializing QNetwork!) for reproducability
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    env.seed(args.seed)
+    np.random.seed(0)
 
-model = QNetwork(num_hidden)
+    model = QNetwork(args.num_hidden)
 
-distances = run_episodes(train, model, memory, env, num_episodes, batch_size, discount_factor, learn_rate)
+    distances = run_episodes(train, model, memory, env, args.num_episodes, args.batch_size, args.discount_factor, args.learn_rate)
 
-plt.figure()
-plt.plot(distances)
-plt.show()
+    plt.figure()
+    plt.plot(distances)
+    plt.show()
+
+
+# Arguments and device
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--num_episodes', type=int, default=500)
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--discount_factor', type=float, default=0.97)
+    parser.add_argument('--learn_rate', type=float, default=5e-4)
+    parser.add_argument('--num_hidden', type=int, default=200)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--update_target', type=int, default=100)
+    parser.add_argument('--memory_size', type=int, default=10000)
+    parser.add_argument('--final_epsilon', type=float, default=0.05)
+    parser.add_argument('--target', type=str, default='soft')
+    parser.add_argument('--tau', type=float, default=0.9)
+    parser.add_argument('--epsilon_threshold', type=int, default=1000)
+    parser.add_argument('--sampling', type=str, default='off', help='Experience sampling: "off", "prioritized", or "uniform".')
+    parser.add_argument('--name', type=str, default='', help='name for tensorboardX run file')
+
+    args = parser.parse_args()
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Initialize tensorboardX writer
+    runs_dir = 'runs/' + args.name
+    writer = SummaryWriter(runs_dir)
+
+    main()
