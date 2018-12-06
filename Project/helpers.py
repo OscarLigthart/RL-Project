@@ -4,6 +4,42 @@ from torch import nn
 import torch.nn.functional as F
 from torch import optim
 import random
+import copy
+
+class ReplayMemory:
+
+    def __init__(self, capacity, method):
+        self.capacity = capacity
+        self.memory = []
+        self.method = method
+
+    def push(self, transition):
+        if len(self.memory) == self.capacity:
+            del self.memory[0]
+
+        self.memory.append(transition)
+
+    def sample(self, batch_size):
+        if self.method == 'uniform':
+            return random.sample(self.memory, batch_size)
+
+        elif self.method == 'off':
+            return self.memory[-batch_size:]
+
+        elif self.method == 'prioritized':
+            # sort on loss
+            sort_memory = sorted(self.memory, key=lambda x: x[5])
+
+            # return batch_size amount of samples
+            return sort_memory[-batch_size:]
+
+        else:
+            raise NotImplementedError('Not a valid method of experience replay, choose between:'
+                                      ' off, uniform and prioritized')
+
+
+    def __len__(self):
+        return len(self.memory)
 
 def select_action(model, state, epsilon):
     # calculate the q values
@@ -78,7 +114,7 @@ def train(model, memory, optimizer, batch_size, discount_factor):
     transitions = memory.sample(batch_size)
 
     # transition is a list of 4-tuples, instead we want 4 vectors (as torch.Tensor's)
-    state, action, reward, next_state, done = zip(*transitions)
+    state, action, reward, next_state, done, loss = zip(*transitions)
 
     # convert to PyTorch and define types
     state = torch.tensor(state, dtype=torch.float)
@@ -114,7 +150,7 @@ def train_target(model, target_model, memory, optimizer, batch_size, discount_fa
     transitions = memory.sample(batch_size)
 
     # transition is a list of 4-tuples, instead we want 4 vectors (as torch.Tensor's)
-    state, action, reward, next_state, done = zip(*transitions)
+    state, action, reward, next_state, done, loss = zip(*transitions)
 
     # convert to PyTorch and define types
     state = torch.tensor(state, dtype=torch.float)
@@ -123,7 +159,7 @@ def train_target(model, target_model, memory, optimizer, batch_size, discount_fa
     reward = torch.tensor(reward, dtype=torch.float)
     done = torch.tensor(done, dtype=torch.uint8)  # Boolean
 
-    # compute the q value
+    # compute the q valuereturn self.memory[-batch_size:]
     q_val = compute_q_val(model, state, action)
 
     with torch.no_grad():  # Don't compute gradient info for the target (semi-gradient)

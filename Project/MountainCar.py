@@ -26,26 +26,6 @@ class QNetwork(nn.Module):
         return x
 
 
-class ReplayMemory:
-
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.memory = []
-
-    def push(self, transition):
-        if len(self.memory) == self.capacity:
-            del self.memory[0]
-
-        self.memory.append(transition)
-
-    def sample(self, batch_size):
-        #return random.sample(self.memory, batch_size)
-        return self.memory[-batch_size:]
-
-    def __len__(self):
-        return len(self.memory)
-
-
 env = gym.envs.make("MountainCar-v0")
 
 
@@ -95,9 +75,6 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             # else:
             #     add_reward += reward
 
-
-            memory.push((state, action, reward, next_state, done))
-
             current_episode.append(action) #(state, action, reward, next_state, done))
 
             # only sample if there is enough memory
@@ -111,6 +88,10 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
                 #     loss = train(model, memory, optimizer, batch_size, discount_factor)
 
                 loss = train(model, memory, optimizer, batch_size, discount_factor)
+                memory.push((state, action, reward, next_state, done, loss))
+
+            else:
+                memory.push((state, action, reward, next_state, done, 0))
 
             state = next_state
             global_steps += 1
@@ -143,7 +124,7 @@ num_episodes = 500
 batch_size = 64
 discount_factor = 0.97
 learn_rate = 5e-4
-memory = ReplayMemory(10000)
+memory = ReplayMemory(10000, 'prioritized')
 num_hidden = 200 #128
 seed = 42  # This is not randomly chosen
 target = True
