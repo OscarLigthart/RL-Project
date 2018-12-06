@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from tqdm import tqdm as _tqdm
+from tqdm import trange
 import random
 import time
 import torch
@@ -51,7 +52,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
     global_steps = 0  # Count the steps (do not reset at episode start, to compute epsilon)
     episode_durations = []  # keep track of episode duration
-    for i in range(num_episodes):
+    for i in trange(num_episodes):
 
         t = 0
         state = env.reset()
@@ -65,7 +66,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
         while not done:
             # calculate epsilon for policy
-            epsilon = get_epsilon(global_steps)
+            epsilon = get_epsilon(global_steps, final_epsilon, flatline)
 
             # pick action according to q-values and policy
             action = select_action(model, state, epsilon)
@@ -77,13 +78,12 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
             next_state, reward, done, _ = env.step(action)
 
-            # Give a reward for reaching a new maximum position
-            if state[0] > max_position:
-                max_position = state[0]
-                print(max_position)
-                add_reward += 10
-            else:
-                add_reward += reward
+            # # Give a reward for reaching a new maximum position
+            # if state[0] > max_position:
+            #     max_position = state[0]
+            #     add_reward += 10
+            # else:
+            #     add_reward += reward
 
 
             memory.push((state, action, reward, next_state, done))
@@ -103,13 +103,17 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     return episode_durations
 
 # Let's run it!
-num_episodes = 500
+num_episodes = 10000
 batch_size = 64
-discount_factor = 0.9
-learn_rate = 1e-3
+discount_factor = 0.97
+learn_rate = 5e-4
 memory = ReplayMemory(10000)
-num_hidden = 128
+num_hidden = 20 #128
 seed = 42  # This is not randomly chosen
+
+# Epsilon function linearly decreases until certain number of iterations, after which it is constant
+final_epsilon = 0.05
+flatline = 5000 # Turning point linear -> constant
 
 # We will seed the algorithm (before initializing QNetwork!) for reproducability
 random.seed(seed)

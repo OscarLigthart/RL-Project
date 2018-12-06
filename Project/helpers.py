@@ -20,13 +20,13 @@ def select_action(model, state, epsilon):
 
     return a
 
-def get_epsilon(it):
+def get_epsilon(it, final_epsilon, flatline):
     # after 1000 iterations, e-greedy with epsilon being 0.5
-    if it >= 1000:
-        epsilon = 0.05
+    if it >= flatline:
+        epsilon = final_epsilon
     # linearly decay epsilon before 1000 iterations
     else:
-        epsilon = 1 - 0.95 * it * (1 / 1000)
+        epsilon = 1 - (1 - final_epsilon) * it * (1 / flatline)
 
     return epsilon
 
