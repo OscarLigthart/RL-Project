@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.functional as F
 import gym
 from helpers import *
+import copy
 
 class QNetwork(nn.Module):
 
@@ -53,6 +54,9 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
     global_steps = 0  # Count the steps (do not reset at episode start, to compute epsilon)
     episode_durations = []  # keep track of episode duration
+    
+    count = 0
+    frozen_model = copy.deepcopy(model)
     for i in range(num_episodes):
 
         t = 0
@@ -62,7 +66,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
         done = False
         while not done:
             # calculate epsilon for policy
-            epsilon = get_epsilon(global_steps)
+            epsilon = get_epsilon(global_steps, final_epsilon, flatline)
 
             # pick action according to q-values and policy
             action = select_action(model, state, epsilon)
@@ -78,26 +82,39 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
             # only sample if there is enough memory
             if len(memory) > batch_size:
-                loss = train(model, memory, optimizer, batch_size, discount_factor)
+                
+                if target:
+                    if count % update_target == 0:
+                        frozen_model = copy.deepcopy(model)
+                    loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
+                else:
+                    loss = train(model, memory, optimizer, batch_size, discount_factor)
 
             state = next_state
             global_steps += 1
             t += 1
+            count += 1
 
         episode_durations.append(t)
 
     print(episode_durations)
+    print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
     env.close()
     return episode_durations
 
 # Let's run it!
-num_episodes = 100
+num_episodes = 250
 batch_size = 64
 discount_factor = 0.8
 learn_rate = 1e-3
 memory = ReplayMemory(10000)
 num_hidden = 128
 seed = 42  # This is not randomly chosen
+update_target = 200
+target = 0
+
+final_epsilon = 0.05
+flatline = 5000 # Turning point linear -> constant
 
 # We will seed the algorithm (before initializing QNetwork!) for reproducability
 random.seed(seed)

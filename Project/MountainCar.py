@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.functional as F
 import gym
 from helpers import *
+import copy
 
 class QNetwork(nn.Module):
 
@@ -52,6 +53,10 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
     global_steps = 0  # Count the steps (do not reset at episode start, to compute epsilon)
     episode_durations = []  # keep track of episode duration
+    
+    count = 0
+    frozen_model = copy.deepcopy(model)
+    
     for i in trange(num_episodes):
 
         t = 0
@@ -89,16 +94,27 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             memory.push((state, action, reward, next_state, done))
 
             # only sample if there is enough memory
+            #if len(memory) > batch_size:
+            #    loss = train(model, memory, optimizer, batch_size, discount_factor)
+            
             if len(memory) > batch_size:
-                loss = train(model, memory, optimizer, batch_size, discount_factor)
+                
+                if target:
+                    if count % update_target == 0:
+                        frozen_model = copy.deepcopy(model)
+                    loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
+                else:
+                    loss = train(model, memory, optimizer, batch_size, discount_factor)
 
             state = next_state
             global_steps += 1
             t += 1
+            count += 1
 
         episode_durations.append(t)
 
-    print(episode_durations)
+    print(episode_durations)    
+    print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
     env.close()
     return episode_durations
 
@@ -110,6 +126,8 @@ learn_rate = 5e-4
 memory = ReplayMemory(10000)
 num_hidden = 20 #128
 seed = 42  # This is not randomly chosen
+target = 1
+update_target = 100
 
 # Epsilon function linearly decreases until certain number of iterations, after which it is constant
 final_epsilon = 0.05
