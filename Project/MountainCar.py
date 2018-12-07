@@ -12,6 +12,9 @@ import torch.functional as F
 import gym
 from helpers import *
 import copy
+import argparse
+from tensorboardX import SummaryWriter
+import pickle
 
 class QNetwork(nn.Module):
 
@@ -112,32 +115,47 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
     print("Max reach")
     print(max_position)
     env.close()
-    return distances
+    return distances, episode_durations
 
 def main():
 
-    memory = ReplayMemory(args.memory_size, args.sampling)
-
     # We will seed the algorithm (before initializing QNetwork!) for reproducability
-    random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    env.seed(args.seed)
-    np.random.seed(0)
+    # random.seed(args.seed)
+    # torch.manual_seed(args.seed)
+    # env.seed(args.seed)
+    # np.random.seed(0)
 
-    model = QNetwork(args.num_hidden)
 
-    distances = run_episodes(train, model, memory, env, args.num_episodes, args.batch_size, args.discount_factor, args.learn_rate)
+    for i in range(args.num_runs):
+        memory = ReplayMemory(args.memory_size, args.sampling)
 
-    plt.figure()
-    plt.plot(distances)
-    plt.show()
+        model = QNetwork(args.num_hidden)
+
+        distances, episode_durations = run_episodes(train, model, memory, env, args.num_episodes,
+                                                    args.batch_size, args.discount_factor, args.learn_rate)
+
+        path = 'MC_' + args.target + '_' + args.sampling + '/'
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        filename = 'maxdistance_run:' + str(i)
+
+        with open(path+filename, 'wb') as handle:
+            pickle.dump(distances, handle)
+
+        filename = 'steps_run:' + str(i)
+
+        with open(path+filename, 'wb') as handle:
+            pickle.dump(episode_durations, handle)
 
 
 # Arguments and device
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--num_episodes', type=int, default=500)
+    parser.add_argument('--num_episodes', type=int, default=50)
+    parser.add_argument('--num_runs', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--discount_factor', type=float, default=0.97)
     parser.add_argument('--learn_rate', type=float, default=5e-4)
