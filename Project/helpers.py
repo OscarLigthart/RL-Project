@@ -57,14 +57,16 @@ def select_action(model, state, epsilon):
 
     return a
 
-def update_target(model, target_model, soft, tau):
+def update_target(model, target_model, type_target, tau):
     
-    if soft:
+    if type_target == 'soft':
         for frozen_parameters, parameters in zip(target_model.parameters(), model.parameters()):
             frozen_parameters.data.copy_(tau*parameters.data + frozen_parameters.data*(1.0 - tau))
-    else:
+    elif type_target == 'hard':
         target_model = copy.deepcopy(model)
-        
+    else:
+        print("This is not a type of target network. Please enter --target 'soft' or --target 'hard'.")
+        quit()
     return target_model
     
 
