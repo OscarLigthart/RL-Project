@@ -1,14 +1,9 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
-from tqdm import tqdm as _tqdm
 from tqdm import trange
-import random
 import time
-import torch
 import torch.nn as nn
 import torch.functional as F
+from torch import optim
 import gym
 from helpers import *
 import copy
@@ -78,7 +73,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             # only sample if there is enough memory
             if len(memory) > batch_size:
 
-                if args.target:
+                if args.target != 'off':
                     if count % args.update_target == 0:
                         frozen_model = update_target(model, frozen_model, args.target, args.tau)
                     loss = train_target(model, frozen_model, memory, optimizer, batch_size, discount_factor)
@@ -99,7 +94,6 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
         if max_position > before:
             best_episode = current_episode
 
-        #print(max_position)
         episode_durations.append(t)
         distances.append(max_position)
 
@@ -154,7 +148,7 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--num_episodes', type=int, default=50)
+    parser.add_argument('--num_episodes', type=int, default=500)
     parser.add_argument('--num_runs', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--discount_factor', type=float, default=0.97)
@@ -164,10 +158,10 @@ if __name__ == "__main__":
     parser.add_argument('--update_target', type=int, default=100)
     parser.add_argument('--memory_size', type=int, default=10000)
     parser.add_argument('--final_epsilon', type=float, default=0.05)
-    parser.add_argument('--target', type=str, default='soft')
+    parser.add_argument('--target', type=str, default='off')
     parser.add_argument('--tau', type=float, default=0.9)
     parser.add_argument('--epsilon_threshold', type=int, default=1000)
-    parser.add_argument('--sampling', type=str, default='off', help='Experience sampling: "off", "prioritized", or "uniform".')
+    parser.add_argument('--sampling', type=str, default='prioritized', help='Experience sampling: "off", "prioritized", or "uniform".')
     parser.add_argument('--name', type=str, default='', help='name for tensorboardX run file')
 
     args = parser.parse_args()

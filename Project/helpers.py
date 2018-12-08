@@ -1,8 +1,6 @@
 import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
-from torch import optim
 import random
 import copy
 
@@ -27,11 +25,23 @@ class ReplayMemory:
             return self.memory[-batch_size:]
 
         elif self.method == 'prioritized':
-            # sort on loss
-            sort_memory = sorted(self.memory, key=lambda x: x[5])
+            # get losses of samples
+            losses = np.array([i[5] for i in self.memory])
+
+            # add constant so no experience has 0 probability to be taken
+            pt = np.absolute(losses) + 1e-6
+
+            # get probabilities
+            probs = pt / sum(pt)
+
+            # get indices of memory samples by sampling from distribution
+            indices = np.random.choice(range(len(probs)), batch_size, p=probs).reshape(-1, 1)
+
+            # sample from memory
+            sample = [self.memory[index[0]] for index in indices]
 
             # return batch_size amount of samples
-            return sort_memory[-batch_size:]
+            return sample
 
         else:
             raise NotImplementedError('Not a valid method of experience replay, choose between:'
@@ -50,7 +60,6 @@ def select_action(model, state, epsilon):
 
     # use policy to choose action
     if random.random() < epsilon:
-        #a = np.random.choice(range(len(actions))).item()
         a = random.choice(range(len(actions)))
     else:
         a = indices.item()
