@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument('--update_target', type=int, default=100)
     parser.add_argument('--memory_size', type=int, default=10000)
     parser.add_argument('--final_epsilon', type=float, default=0.05)
-    parser.add_argument('--target', type=str, default='soft')
+    parser.add_argument('--target', type=str, default='')
     parser.add_argument('--tau', type=float, default=0.9)
     parser.add_argument('--epsilon_threshold', type=int, default=1000)
     parser.add_argument('--sampling', type=str, default='uniform', help='Experience sampling: "off", "prioritized", or "uniform".')
