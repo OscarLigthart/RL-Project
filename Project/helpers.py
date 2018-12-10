@@ -45,7 +45,7 @@ class ReplayMemory:
 
         else:
             raise NotImplementedError('Not a valid method of experience replay, choose between:'
-                                      ' off, uniform and prioritized')
+                                      'off, uniform and prioritized')
 
 
     def __len__(self):
