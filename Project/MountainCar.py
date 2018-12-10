@@ -80,7 +80,6 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
                 else:
                     loss = train(model, memory, optimizer, batch_size, discount_factor)
 
-                loss = train(model, memory, optimizer, batch_size, discount_factor)
                 memory.push((state, action, reward, next_state, done, loss))
 
             else:
