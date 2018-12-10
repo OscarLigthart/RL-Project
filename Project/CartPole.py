@@ -50,9 +50,9 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
             action = select_action(model, state, epsilon)
 
             # show demo of the final episode
-            if i == num_episodes - 1:
-                env.render()
-                time.sleep(0.05)
+            #if i == num_episodes - 1:
+            #    env.render()
+            #    time.sleep(0.05)
 
             next_state, reward, done, _ = env.step(action)
 
@@ -109,6 +109,9 @@ def main():
 
         with open(path+filename, 'wb') as handle:
             pickle.dump(episode_durations, handle)
+
+    filename = 'final_model'
+    torch.save(model, path+filename + '.pt')
 
 # Arguments and device
 if __name__ == "__main__":

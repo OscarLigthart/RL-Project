@@ -142,6 +142,8 @@ def main():
         with open(path+filename, 'wb') as handle:
             pickle.dump(episode_durations, handle)
 
+    filename = 'final_model'
+    torch.save(model, path + filename + '.pt')
 
 # Arguments and device
 if __name__ == "__main__":
