@@ -20,7 +20,7 @@ dirs_MC = [d[0] for d in os.walk('./') if d[0].startswith('./MC')]
 
 
 for env, directories in enumerate([dirs_CP, dirs_MC]):
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 3), sharey=True)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 4.5), sharey=True)
     # f.set_figheight(5)
     # f.set_figwidth(5)
     exp_replay = {'off': ax1, 'prioritized': ax2, 'uniform': ax3}
@@ -54,7 +54,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
                 # print(runs_lower)
                 exp_replay[item].fill_between(range(len(lines[x])), errors_lower[x], errors_upper[x], alpha=0.15)
                 exp_replay[item].legend(loc=2)
-    plt.savefig(envs[env])
+    plt.savefig('./images/' + envs[env], dpi=600)
 
 
 
