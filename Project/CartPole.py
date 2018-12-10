@@ -78,7 +78,7 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
 
         episode_durations.append(t)
 
-    print(episode_durations)
+    #print(episode_durations)
     print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
     env.close()
     return episode_durations

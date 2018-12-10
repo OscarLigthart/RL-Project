@@ -96,14 +96,14 @@ def run_episodes(train, model, memory, env, num_episodes, batch_size, discount_f
         episode_durations.append(t)
         distances.append(max_position)
 
-    print(episode_durations)
+    #print(episode_durations)
     print("Average episode duration: ", sum(episode_durations)/len(episode_durations))
 
-    env.reset()
-    for act in best_episode:
-        env.step(act)
-        env.render()
-        time.sleep(0.05)
+    #env.reset()
+    #for act in best_episode:
+    #    env.step(act)
+    #    env.render()
+    #    time.sleep(0.05)
 
     print("Max reach")
     print(max_position)
