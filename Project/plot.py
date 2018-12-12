@@ -59,15 +59,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
                 # sort both labels and handles by labels
                 labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
                 exp_replay[item].legend(handles, labels, loc=2)
-
     axes[1, 1].set_visible(False)
-    # for i in range(2):
-    #     for j in range(2):
-    #         handles, labels = axes[i, j].get_legend_handles_labels()
-    #     # sort both labels and handles by labels
-    #     labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
-    #     ax.legend(handles, labels)
-
     plt.savefig('./images/' + envs[env], dpi=600)
 
 
