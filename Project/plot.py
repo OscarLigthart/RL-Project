@@ -58,7 +58,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
                 exp_replay[item].plot(lines[x], label=result, color=coloring[result])
                 exp_replay[item].set_title(item)
                 # print(runs_lower)
-                exp_replay[item].fill_between(range(len(lines[x])), errors_lower[x], errors_upper[x], alpha=0.15)
+                exp_replay[item].fill_between(range(len(lines[x])), errors_lower[x], errors_upper[x], alpha=0.15, color=coloring[result])
 
                 exp_replay[item].legend(loc=2)
                 exp_replay[item].set_ylim(axis_ranges[env][0], axis_ranges[env][1])
@@ -74,7 +74,3 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
     if not os.path.exists('./images'):
         os.makedirs('./images')
     plt.savefig('./images/' + envs[env], dpi=300)
-
-
-
-
