@@ -18,12 +18,15 @@ envs = ['CartPole.png', 'MountainCar.png']
 dirs_CP = [d[0] for d in os.walk('./') if d[0].startswith('./CP')]
 dirs_MC = [d[0] for d in os.walk('./') if d[0].startswith('./MC')]
 
+axis_ranges = [[-5, 205],[-0.55,0.75]]
+
+smooth_values= [10,100]
 
 for env, directories in enumerate([dirs_CP, dirs_MC]):
     f, axes = plt.subplots(2, 2, figsize=(10, 10))
     # f.set_figheight(5)
     # f.set_figwidth(5)
-    exp_replay = {'off': axes[0, 0], 'prioritized': axes[0,1], 'uniform': axes[1,0]}
+    exp_replay = {'off': axes[0, 0], 'prioritized': axes[0,1], 'uniform': axes[1,env]}
     lines = {}
     errors_upper = {}
     errors_lower = {}
@@ -38,9 +41,9 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
         a = [x[0] for x in runs]
         runs = [sum(x) for x in zip(*runs)]
         runs = [x / 25 for x in runs]
-        runs_lower = np.array(smooth([x - y for x, y in zip(runs, stderr)], 10))
-        runs_upper = np.array(smooth([x + y for x, y in zip(runs, stderr)], 10))
-        runs = np.array(smooth(runs, 10))
+        runs_lower = np.array(smooth([x - y for x, y in zip(runs, stderr)], smooth_values[env]))
+        runs_upper = np.array(smooth([x + y for x, y in zip(runs, stderr)], smooth_values[env]))
+        runs = np.array(smooth(runs, smooth_values[env]))
         lines[directory] = runs
         errors_upper[directory] = runs_upper
         errors_lower[directory] = runs_lower
@@ -54,8 +57,12 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
                 # print(runs_lower)
                 exp_replay[item].fill_between(range(len(lines[x])), errors_lower[x], errors_upper[x], alpha=0.15)
                 exp_replay[item].legend(loc=2)
-    axes[1,1].set_visible(False)
-    plt.savefig('./images/' + envs[env], dpi=600)
+                exp_replay[item].set_ylim(axis_ranges[env][0], axis_ranges[env][1])
+    axes[1,1-env].set_visible(False)
+
+    if not os.path.exists('./images'):
+        os.makedirs('./images')
+    plt.savefig('./images/' + envs[env], dpi=300)
 
 
 
