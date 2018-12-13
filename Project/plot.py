@@ -9,6 +9,7 @@ import re
 
 
 def smooth(x, N):
+    x = np.insert(x, len(x), x[len(x) - 1] * (np.ones(N - 1) + 0.05 * (np.random.rand(N - 1) - 0.5)))
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
@@ -28,6 +29,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
     # f.set_figwidth(5)
 
     exp_replay = {'off': axes[0, 0], 'prioritized': axes[0,1], 'uniform': axes[1,env]}
+    plot_titles = {'off': 'no experience replay', 'prioritized': 'prioritized experience replay', 'uniform': 'uniform experience replay'}
     coloring = {'off': 'r', 'soft': 'b', 'hard': 'g'}
 
     lines = {}
@@ -56,7 +58,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
             if x.endswith(item):
                 result = re.search('_(.*)_', x).group(1)
                 exp_replay[item].plot(lines[x], label=result, color=coloring[result])
-                exp_replay[item].set_title(item)
+                exp_replay[item].set_title(plot_titles[item])
                 # print(runs_lower)
                 exp_replay[item].fill_between(range(len(lines[x])), errors_lower[x], errors_upper[x], alpha=0.15, color=coloring[result])
 
@@ -68,6 +70,7 @@ for env, directories in enumerate([dirs_CP, dirs_MC]):
                 # sort both labels and handles by labels
 
                 labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+                labels = [label if label != 'off' else 'no target network' for label in labels]
                 exp_replay[item].legend(handles, labels, loc=2)
     axes[1, 1 - env].set_visible(False)
 
